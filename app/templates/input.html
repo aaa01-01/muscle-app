@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">トレーニング記録</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('training_input') }}">
+                        <div class="mb-3">
+                            <label for="exercise" class="form-label">種目</label>
+                            <select class="form-select" id="exercise" name="exercise" required>
+                                <option value="">種目を選択してください</option>
+                                <option value="ベンチプレス">ベンチプレス</option>
+                                <option value="スクワット">スクワット</option>
+                                <option value="デッドリフト">デッドリフト</option>
+                                <option value="オーバーヘッドプレス">オーバーヘッドプレス</option>
+                                <option value="バーベルロウ">バーベルロウ</option>
+                                <option value="ラットプルダウン">ラットプルダウン</option>
+                                <option value="レッグプレス">レッグプレス</option>
+                                <option value="カーフレイズ">カーフレイズ</option>
+                                <option value="アームカール">アームカール</option>
+                                <option value="トライセップスエクステンション">トライセップスエクステンション</option>
+                                <option value="サイドレイズ">サイドレイズ</option>
+                                <option value="フロントレイズ">フロントレイズ</option>
+                                <option value="フェイスプル">フェイスプル</option>
+                                <option value="インクラインベンチプレス">インクラインベンチプレス</option>
+                                <option value="デクラインベンチプレス">デクラインベンチプレス</option>
+                                <option value="ハックスクワット">ハックスクワット</option>
+                                <option value="レッグエクステンション">レッグエクステンション</option>
+                                <option value="レッグカール">レッグカール</option>
+                                <option value="アブドミナルクランチ">アブドミナルクランチ</option>
+                                <option value="プランク">プランク</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="weight" class="form-label">重量 (kg)</label>
+                            <input type="number" step="0.1" class="form-control" id="weight" name="weight" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reps" class="form-label">レップ数</label>
+                            <input type="number" class="form-control" id="reps" name="reps" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sets" class="form-label">セット数</label>
+                            <input type="number" class="form-control" id="sets" name="sets" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">メモ</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">記録する</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 成功モーダル -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">記録完了</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                トレーニング記録が保存されました。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                <a href="{{ url_for('training_input') }}" class="btn btn-primary">続けて記録する</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- エラーモーダル -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="errorModalLabel">エラー</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                エラーが発生しました。もう一度お試しください。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const successModalElement = document.getElementById('successModal');
+        const errorModalElement = document.getElementById('errorModal');
+
+        if (successModalElement && errorModalElement) {
+            const successModal = new bootstrap.Modal(successModalElement);
+            const errorModal = new bootstrap.Modal(errorModalElement);
+
+            {% if success %}
+            setTimeout(() => {
+                successModal.show();
+            }, 100);
+            {% endif %}
+
+            {% if error %}
+            setTimeout(() => {
+                errorModal.show();
+            }, 100);
+            {% endif %}
+        }
+    } catch (error) {
+        console.warn('モーダルの初期化中にエラーが発生しました:', error);
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h2>記録確認</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    トレーニングを正常に記録しました！
+                </div>
+                
+                <table class="table table-bordered">
+                    <tr>
+                        <th>種目</th>
+                        <td>{{ record.exercise }}</td>
+                    </tr>
+                    <tr>
+                        <th>重量</th>
+                        <td>{{ record.weight }} kg</td>
+                    </tr>
+                    <tr>
+                        <th>レップ数</th>
+                        <td>{{ record.reps }} 回</td>
+                    </tr>
+                    <tr>
+                        <th>セット数</th>
+                        <td>{{ record.sets }} セット</td>
+                    </tr>
+                </table>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                        ホームに戻る
+                    </a>
+                    <a href="{{ url_for('training_input') }}" class="btn btn-primary">
+                        続けて入力
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

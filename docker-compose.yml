@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    working_dir: /muscle-app
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/muscle-app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=run.py
+      - DATABASE_URL=postgresql://aaa01:password@postgres/muscle_training_db
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=muscle_training_db
+      - POSTGRES_USER=aaa01
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

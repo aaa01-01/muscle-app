@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-3">トレーニングカレンダー</h2>
+            </div>
+            <div class="card-body calendar-wrapper">
+                <div id="calendar" class="fc-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-3">重量の推移</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    <select id="exerciseSelect" class="form-select" style="max-width: 200px;">
+                        <option value="">種目を選択</option>
+                        {% for exercise in exercises %}
+                        <option value="{{ exercise }}">{{ exercise }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="periodSelect" class="form-select" style="max-width: 150px;">
+                        <option value="30days">過去30日間</option>
+                        <option value="1year">過去1年間</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- トレーニング詳細モーダル -->
+<div class="modal fade" id="trainingDetailsModal" tabindex="-1" aria-labelledby="trainingDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trainingDetailsModalLabel">トレーニング詳細</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="trainingDetailsContent">
+                <!-- トレーニング詳細がここに表示されます -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.calendar-wrapper {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.fc-container {
+    width: 100%;
+    height: auto !important;
+}
+
+.fc {
+    width: 100% !important;
+    height: auto !important;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    margin-bottom: 1.5rem !important;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.fc .fc-view-harness {
+    height: auto !important;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.fc .fc-daygrid-body {
+    width: 100% !important;
+}
+
+.fc .fc-scrollgrid {
+    width: 100% !important;
+    border: none !important;
+}
+
+.fc .fc-daygrid-day {
+    height: auto !important;
+}
+
+.fc .fc-daygrid-day-frame {
+    height: auto !important;
+    min-height: 5vw !important;
+    max-height: 100px !important;
+}
+
+.fc .fc-daygrid-day-events {
+    min-height: auto !important;
+}
+
+.fc .fc-daygrid-day-number {
+    padding: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(74, 144, 226, 0.1) !important;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.fc .fc-event {
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.fc .fc-button {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.fc .fc-button:hover {
+    background-color: #357ABD;
+    border-color: #357ABD;
+    transform: translateY(-1px);
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #357ABD;
+    border-color: #357ABD;
+}
+
+#weightChart {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .calendar-wrapper {
+        padding: 0.5rem;
+    }
+    
+    .fc .fc-toolbar {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.2em;
+        text-align: center;
+    }
+
+    .fc .fc-daygrid-day-frame {
+        min-height: 40px !important;
+    }
+
+    .fc .fc-header-toolbar {
+        margin-bottom: 0.5em !important;
+    }
+
+    .card-header {
+        padding: 1rem;
+    }
+
+    .fc .fc-button {
+        padding: 0.2em 0.4em;
+        font-size: 0.9em;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .fc .fc-daygrid-day-frame {
+        min-height: 60px !important;
+    }
+}
+
+.form-select {
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 14px 10px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-size: 1rem;
+    min-width: 180px;
+    width: auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    height: 3rem;
+    line-height: 1.5;
+}
+
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    outline: none;
+}
+
+.form-select option {
+    padding: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.card-header .d-flex {
+    gap: 1.5rem;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .card-header .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .form-select {
+        width: 100%;
+        max-width: none;
+        padding: 0.5rem 2.5rem 0.5rem 1rem;
+        height: 3rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // カレンダーの初期化
+    var calendarEl = document.getElementById('calendar');
+    var trainingDetailsModal = new bootstrap.Modal(document.getElementById('trainingDetailsModal'));
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 'auto',
+        contentHeight: 'auto',
+        aspectRatio: 1.35,
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        buttonText: {
+            today: '今日'
+        },
+        dateClick: function(info) {
+            // その日のトレーニング詳細を取得
+            fetch(`/training/details?date=${info.dateStr}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(details => {
+                    const modalContent = document.getElementById('trainingDetailsContent');
+                    const modalTitle = document.getElementById('trainingDetailsModalLabel');
+                    
+                    // 日付を日本語形式に変換
+                    const date = new Date(info.dateStr);
+                    const formattedDate = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+                    modalTitle.textContent = `${formattedDate}のトレーニング`;
+
+                    if (details.length === 0) {
+                        modalContent.innerHTML = '<p class="text-muted">この日のトレーニング記録はありません。</p>';
+                    } else {
+                        // トレーニング詳細をHTML形式で表示
+                        modalContent.innerHTML = details.map(detail => `
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">${detail.exercise}</h6>
+                                    <button class="btn btn-danger btn-sm delete-record" data-record-id="${detail.id}">
+                                        削除
+                                    </button>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>重量: ${detail.weight}kg</span>
+                                    <span>${detail.reps}回 × ${detail.sets}セット</span>
+                                </div>
+                            </div>
+                        `).join('');
+
+                        // 削除ボタンのイベントリスナーを追加
+                        document.querySelectorAll('.delete-record').forEach(button => {
+                            button.addEventListener('click', function() {
+                                if (confirm('このトレーニング記録を削除してもよろしいですか？')) {
+                                    const recordId = this.dataset.recordId;
+                                    fetch(`/training/delete/${recordId}`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            // カレンダーを更新
+                                            calendar.refetchEvents();
+                                            // モーダルを閉じる
+                                            trainingDetailsModal.hide();
+                                            // 成功メッセージを表示
+                                            alert('トレーニング記録を削除しました。');
+                                        } else {
+                                            alert('トレーニング記録の削除に失敗しました。');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('削除処理に失敗しました:', error);
+                                        alert('トレーニング記録の削除に失敗しました。');
+                                    });
+                                }
+                            });
+                        });
+                    }
+                    
+                    // モーダルを表示
+                    trainingDetailsModal.show();
+                })
+                .catch(error => {
+                    console.error('トレーニング詳細の取得に失敗しました:', error);
+                    alert('トレーニング詳細の取得に失敗しました。');
+                });
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+            fetch('/training/records')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(dates => {
+                    if (!Array.isArray(dates)) {
+                        console.warn('予期しないデータ形式です:', dates);
+                        successCallback([]);
+                        return;
+                    }
+                    // 日付の配列をイベントオブジェクトの配列に変換
+                    const events = dates.map(date => ({
+                        title: 'トレーニング',
+                        start: date,
+                        backgroundColor: '#4A90E2',
+                        borderColor: '#4A90E2'
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('トレーニング記録の取得に失敗しました:', error);
+                    successCallback([]); // エラー時は空の配列を返す
+                });
+        }
+    });
+    calendar.render();
+
+    // ウィンドウリサイズ時にカレンダーを再レンダリング
+    window.addEventListener('resize', function() {
+        calendar.updateSize();
+    });
+
+    // グラフの初期化
+    const ctx = document.getElementById('weightChart').getContext('2d');
+    let weightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: '重量 (kg)',
+                data: [],
+                borderColor: '#4A90E2',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // グラフの更新関数
+    function updateChart() {
+        const exercise = document.getElementById('exerciseSelect').value;
+        const period = document.getElementById('periodSelect').value;
+
+        if (!exercise) {
+            weightChart.data.labels = [];
+            weightChart.data.datasets[0].data = [];
+            weightChart.update();
+            return;
+        }
+
+        fetch(`/training/progress?exercise=${encodeURIComponent(exercise)}&period=${period}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                weightChart.data.labels = data.dates.map(date => {
+                    const d = new Date(date);
+                    return `${d.getMonth() + 1}/${d.getDate()}`;
+                });
+                weightChart.data.datasets[0].data = data.weights;
+                weightChart.update();
+            })
+            .catch(error => {
+                console.error('進捗データの取得に失敗しました:', error);
+                alert('進捗データの取得に失敗しました。');
+            });
+    }
+
+    // イベントリスナーの設定
+    document.getElementById('exerciseSelect').addEventListener('change', updateChart);
+    document.getElementById('periodSelect').addEventListener('change', updateChart);
+});
+</script>
+{% endblock %}

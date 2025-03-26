@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2>重量の推移</h2>
+        <div class="d-flex gap-2">
+            <select id="exerciseSelect" class="form-select" style="width: auto;">
+                <option value="">種目を選択してください</option>
+                {% for exercise in exercises %}
+                <option value="{{ exercise }}">{{ exercise }}</option>
+                {% endfor %}
+            </select>
+            <select id="periodSelect" class="form-select" style="width: auto;">
+                <option value="30days">過去30日間</option>
+                <option value="1year">過去1年間</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="chartContainer">
+            <canvas id="weightProgressChart"></canvas>
+        </div>
+        <div id="noDataMessage" class="text-center py-5" style="display: none;">
+            <p class="text-muted">種目を選択してください</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let progressChart = null;
+
+function updateChart(exercise, period) {
+    const chartContainer = document.getElementById('chartContainer');
+    const noDataMessage = document.getElementById('noDataMessage');
+    
+    if (!exercise) {
+        chartContainer.style.display = 'none';
+        noDataMessage.style.display = 'block';
+        return;
+    }
+
+    chartContainer.style.display = 'block';
+    noDataMessage.style.display = 'none';
+
+    fetch(`/training/progress?exercise=${encodeURIComponent(exercise)}&period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            if (progressChart) {
+                progressChart.destroy();
+            }
+
+            const ctx = document.getElementById('weightProgressChart').getContext('2d');
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates.map(date => {
+                        const d = new Date(date);
+                        return `${d.getMonth() + 1}/${d.getDate()}`;
+                    }),
+                    datasets: [{
+                        label: `${exercise}の最大重量 (kg)`,
+                        data: data.weights,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '重量 (kg)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日付'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: period === '30days' ? '過去30日間の重量推移' : '過去1年間の重量推移'
+                        }
+                    }
+                }
+            });
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const exerciseSelect = document.getElementById('exerciseSelect');
+    const periodSelect = document.getElementById('periodSelect');
+
+    function updateChartWithCurrentSelections() {
+        updateChart(exerciseSelect.value, periodSelect.value);
+    }
+
+    exerciseSelect.addEventListener('change', updateChartWithCurrentSelections);
+    periodSelect.addEventListener('change', updateChartWithCurrentSelections);
+
+    // 初期表示
+    updateChart('', '30days');
+});
+</script>
+{% endblock %} 

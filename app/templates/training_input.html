@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-3">トレーニング記録</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.exercise.label(class="form-label") }}
+                        {{ form.exercise(class="form-select") }}
+                        {% for error in form.exercise.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.weight.label(class="form-label") }}
+                        {{ form.weight(class="form-control") }}
+                        {% for error in form.weight.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.reps.label(class="form-label") }}
+                        {{ form.reps(class="form-control") }}
+                        {% for error in form.reps.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.sets.label(class="form-label") }}
+                        {{ form.sets(class="form-control") }}
+                        {% for error in form.sets.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">記録する</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.calendar-wrapper {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.fc-container {
+    width: 100%;
+    height: auto !important;
+}
+
+.fc {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.fc .fc-view-harness {
+    height: auto !important;
+}
+
+.fc .fc-daygrid-body {
+    width: 100% !important;
+}
+
+.fc .fc-scrollgrid {
+    width: 100% !important;
+    border: none !important;
+}
+
+.fc .fc-daygrid-day {
+    height: auto !important;
+}
+
+.fc .fc-daygrid-day-frame {
+    height: auto !important;
+    min-height: 5vw !important;
+    max-height: 100px !important;
+}
+
+.fc .fc-daygrid-day-events {
+    min-height: auto !important;
+}
+
+@media (max-width: 768px) {
+    .calendar-wrapper {
+        padding: 0.5rem;
+    }
+    
+    .fc .fc-toolbar {
+        flex-direction: column;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.2em;
+        text-align: center;
+    }
+
+    .fc .fc-daygrid-day-frame {
+        min-height: 40px !important;
+    }
+
+    .fc .fc-header-toolbar {
+        margin-bottom: 0.5em !important;
+    }
+
+    .card-header {
+        padding: 1rem;
+    }
+
+    .fc .fc-button {
+        padding: 0.2em 0.4em;
+        font-size: 0.9em;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .fc .fc-daygrid-day-frame {
+        min-height: 60px !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var trainingDetailsModal = new bootstrap.Modal(document.getElementById('trainingDetailsModal'));
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 'auto',
+        contentHeight: 'auto',
+        aspectRatio: 1.35,
+        dateClick: function(info) {
+            // その日のトレーニング詳細を取得
+            fetch(`/training/details?date=${info.dateStr}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(details => {
+                    const modalContent = document.getElementById('trainingDetailsContent');
+                    const modalTitle = document.getElementById('trainingDetailsModalLabel');
+                    
+                    // 日付を日本語形式に変換
+                    const date = new Date(info.dateStr);
+                    const formattedDate = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+                    modalTitle.textContent = `${formattedDate}のトレーニング`;
+
+                    if (details.length === 0) {
+                        modalContent.innerHTML = '<p class="text-muted">この日のトレーニング記録はありません。</p>';
+                    } else {
+                        // トレーニング詳細をHTML形式で表示
+                        modalContent.innerHTML = details.map(detail => `
+                            <div class="mb-3">
+                                <h6 class="mb-2">${detail.exercise}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>重量: ${detail.weight}kg</span>
+                                    <span>${detail.reps}回 × ${detail.sets}セット</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // モーダルを表示
+                    trainingDetailsModal.show();
+                })
+                .catch(error => {
+                    console.error('トレーニング詳細の取得に失敗しました:', error);
+                    alert('トレーニング詳細の取得に失敗しました。');
+                });
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+            fetch('/training/records')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(dates => {
+                    if (!Array.isArray(dates)) {
+                        console.warn('予期しないデータ形式です:', dates);
+                        successCallback([]);
+                        return;
+                    }
+                    // 日付の配列をイベントオブジェクトの配列に変換
+                    const events = dates.map(date => ({
+                        title: 'トレーニング',
+                        start: date,
+                        backgroundColor: '#28a745',
+                        borderColor: '#28a745'
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('トレーニング記録の取得に失敗しました:', error);
+                    successCallback([]); // エラー時は空の配列を返す
+                });
+        }
+    });
+    calendar.render();
+
+    // ウィンドウリサイズ時にカレンダーを再レンダリング
+    window.addEventListener('resize', function() {
+        calendar.updateSize();
+    });
+});
+</script>
+{% endblock %}
